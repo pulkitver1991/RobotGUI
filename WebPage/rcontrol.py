@@ -10,19 +10,10 @@ import mapping as Map
 import GotoGoalPlanner as G2G
 from GotoGoalPlanner import State
 
-import matplotlib.pyplot as plt
-show_animation = False
-
 import os
 import json
 import time
 import datetime
-
-arena_path = {}
-
-# initial state of the robot
-state = State(x=0, y=0, yaw=0, v=0.0)
-tind = 0
 
 # Create Paths
 device_file_path = os.path.dirname(os.path.abspath(__file__))
@@ -30,13 +21,17 @@ path, file = os.path.split(device_file_path)
 device_file_path = os.path.join(path, 'config')
 database_path = os.path.join(path, 'WebPage')
 
-# GUI_MIN_COORD = (0, 0)
-# GUI_MAX_COORD = (1000, 425)
-# ARENA_MIN_COORD = (0, 0)
-# ARENA_MAX_COORD = (10, 8)
-
 allBots = range(3, 3)
 botIPS = ['192.168.1.10' + str(i) for i in allBots]
+maps_list = []
+select_map = None
+x_dim = 1000
+y_dim = 425
+
+# initial state of the robot
+state = State(x=0, y=0, yaw=0, v=0.0)
+arena_path = {}
+tind = 0
 
 # Create Flask App
 app = Flask(__name__)
@@ -69,7 +64,7 @@ def createStartUPFiles(device_file_path=device_file_path):
 
 	# create the piston json file if does not exist
 	if os.path.exists(device_file_path + '/piston.json'):
-		pass
+			pass
 	else:
 		data = {"status": "0", "ids": "[]", "start": "None"}
 		with open(device_file_path + '/piston.json', 'w') as f:
@@ -83,9 +78,27 @@ def createStartUPFiles(device_file_path=device_file_path):
 		with open(device_file_path + '/g2g.json', 'w') as f:
 			json.dump(data, f)
 
+	# create the maps json file if does not exist
+	if os.path.exists(device_file_path + '/maps.json'):
+		pass
+	else:
+		data = {"maps": [{"image": "", "x_dim" : 0, "y_dim" : 0}]}
+		with open(device_file_path + '/maps.json', 'w') as f:
+			json.dump(data, f)
+
 # intialize app
 def init_app():
+	readMapsJson()
 	createStartUPFiles(device_file_path)
+
+# read initial data for finding the number of maps
+def readMapsJson():
+	global maps_list
+	with open(device_file_path + '/maps.json') as f:
+		fc = json.load(f)
+	no_of_maps = len(fc['maps'])
+	for i in range(no_of_maps):
+		maps_list.append(fc['maps'][i]['image'].split('.')[0])
 
 # Route for Home page
 @app.route('/')
@@ -165,18 +178,19 @@ def go_to_goal():
 # Route for manually controlling the robot
 @app.route('/human_control', methods=['GET','POST'])
 def human_control():
+	global maps_list
 	if not 'username' in session:
 		flash('You are Logged Out')
 		return render_template('home.html')
 	else:
 		if request.method == 'POST':
 			rid = request.form['rid']
-		return render_template('human_control.html', active_user=active_user) 
+		return render_template('human_control.html', active_user=active_user, maps_list=maps_list) 
 
 @app.route('/recv_robot_path',methods=["GET", "POST"])
 def recv_robot_path():
 	global arena_path, state
-	global tind
+	global tind, x_dim, y_dim
 	path = {}
 	state = State(x=0, y=0, yaw=0, v=0.0)
 	tind = 0
@@ -185,11 +199,10 @@ def recv_robot_path():
 		path['x'] = data['x']
 		path['y'] = data['y']
 		print path
-		arena_path = Map.pixels2meter(path, invert=True)
+		arena_path = Map.pixels2meter(path, invert=True, GUI_MAX_COORD = (x_dim, y_dim))
 		state = State(x=arena_path['x'][0], y=arena_path['y'][0], yaw=0, v=0.0)
 		tind = G2G.calc_target_index(state, arena_path['x'], arena_path['y'])
 	return render_template("human_control.html", active_user=active_user)
-
 
 @app.route('/get_tracking_data')
 def get_tracking_data():
@@ -198,6 +211,22 @@ def get_tracking_data():
 	pose, tind = tracking(arena_path)
 	return jsonify({'x': pose['x'], 'y': pose['y'], 'track_done': tind==last_index})
 
+@app.route('/get_maps_count')
+def get_maps_count():	
+	global select_map
+	select_map = int(request.args.get('count')) - 1
+	return render_template("human_control.html", active_user=active_user)
+
+@app.route('/post_maps')
+def post_maps():
+	global select_map
+	global x_dim, y_dim	
+	with open(device_file_path + "/maps.json") as f:
+		data = json.load(f)
+	img = data['maps'][select_map]['image']
+	x_dim = data['maps'][select_map]['x_dim']
+	y_dim = data['maps'][select_map]['y_dim']
+	return jsonify({'img': img, 'x_dim': x_dim, 'y_dim': y_dim})
 
 # Route for Signin Page
 @app.route('/signin', methods=['GET', 'POST'])
@@ -256,14 +285,14 @@ def general_config(item, val):
 		json.dump(data, file)
 
 def tracking(path):
-	global state, tind
+	global state, tind, x_dim, y_dim
 	target_speed = 0.7
 	cx = path['x']
 	cy = path['y']
 	ai = G2G.PIDControl(target_speed, state.v)
 	di, tind = G2G.pure_pursuit_control(state, cx, cy, tind)
 	state = G2G.update(state, ai, di)
-	pose = Map.meter2pixel({'x':[state.x], 'y': [state.y]}, invert=True)
+	pose = Map.meter2pixel({'x':[state.x], 'y': [state.y]}, invert=True, GUI_MAX_COORD = (x_dim, y_dim))
 	return pose, tind
 
 

@@ -1,0 +1,29 @@
+{
+	"maps": [
+		{
+				"image": "skull.png",
+				"x_dim" : 500,
+				"y_dim" : 500
+		},
+		{
+				"image": "map.png",
+				"x_dim" : 100,
+				"y_dim" : 425
+		},
+		{
+				"image": "galaxy.jpg",
+				"x_dim" : 1000,
+				"y_dim" : 425
+		},
+		{
+				"image": "galaxy.jpg",
+				"x_dim" : 250,
+				"y_dim" : 225
+		},
+		{
+				"image": "test.png",
+				"x_dim" : 1500,
+				"y_dim" : 1500
+		}
+	]
+}
