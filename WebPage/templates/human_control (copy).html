@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	
+	<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	
+	<meta name="description" content="">
+	
+	<meta name="author" content="">
+	
+	<link rel="icon" href="static/images/aarg.png">
+	
+	<title>Robot Control</title>
+
+	<!-- Load the Paper.js library -->
+	<script type="text/javascript" src="static/js/paper-full.js"></script>
+
+    <!-- Bootstrap core CSS -->
+    <link href="static/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!--Fonts-->
+    <link href="static/css/fonts-all.css" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link href="static/css/font-awesome.css" rel="stylesheet">
+    
+    <!-- Custom styles for this template -->
+    <link href="static/css/style.css" rel="stylesheet">
+
+</head>
+
+<body>
+	<div class="container-fluid" id="wrapper">
+		<div class="row">
+			<nav class="sidebar col-xs-12 col-sm-4 col-lg-3 col-xl-2 bg-faded sidebar-style-1">
+				<h1 class="site-title"><a href="/"><em class="fa fa-android"></em> Minion Control</a></h1>
+				
+				<a href="#menu-toggle" class="btn btn-default" id="menu-toggle"><em class="fa fa-bars"></em></a>
+				
+				<ul class="nav nav-pills flex-column sidebar-nav">
+					<li class="nav-item"><a class="nav-link" href="/welcome"><em class="fa fa-home"></em> Welcome</a></li>
+					<li class="nav-item"><a class="nav-link" href="/speed_control"><em class="fa fa-cogs"></em> Speed Control</a></li>
+					<li class="nav-item"><a class="nav-link" href="/piston_control"><em class="fa fa-cogs"></em> Piston Control</a></li>
+					<li class="nav-item"><a class="nav-link" href="/go_to_goal"><em class="fa fa-cogs"></em> Go To Goal</a></li>
+					<li class="nav-item"><a class="nav-link active" href="/human_control"><em class="fa fa-cogs"></em> Human Control<span class="sr-only">(current)</span></a></li>
+				</ul>
+					
+				<a href="/signout" class="logout-button"><em class="fa fa-power-off"></em> Signout</a></nav>
+			
+			<main class="col-xs-12 col-sm-8 offset-sm-4 col-lg-9 offset-lg-3 col-xl-10 offset-xl-2 pt-3 pl-4">
+				<header class="page-header row justify-center">
+					<div class="col-md-6 col-lg-8" >
+						<h1 class="float-left text-center text-md-left">Human Control</h1>
+					</div>
+					
+					<div class="dropdown user-dropdown col-md-6 col-lg-4 text-center text-md-right"><a class="btn btn-stripped dropdown-toggle" href="https://example.com" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+						<img src="static/images/aarg.png" alt="profile photo" class="float-left img-fluid im-thumbnail" width="30" height="auto">
+						
+						<div class="username mt-1">
+							<h4 class="mb-1">{{active_user}}</h4>
+						</div>
+						</a>
+						
+						<div class="dropdown-menu dropdown-menu-right" style="margin-right: 1.5rem;" aria-labelledby="dropdownMenuLink">
+						     <a class="dropdown-item" href="/signout"><em class="fa fa-power-off mr-1"></em> Logout</a></div>
+					</div>
+					
+					<div class="clear"></div>
+				</header>
+
+				
+				<section class="row">
+					<div class="col-sm-12">
+						<section class="row">
+							<div class="col-md-12 col-lg-9">
+								<form id="myForm" class="form-horizontal" action="/human_control" method="post"> 
+									<fieldset>
+										<div class="form-group">
+											<div class="row">
+												<div class="col-sm-4">
+												<label for="rid" class="col"><strong>Select Robot</strong></label>
+													<div class="btn-group" data-toggle="buttons">
+													{% for cnt in range(9) %}
+														{% if cnt == 0 %}
+													  	<label class="btn btn-primary active">
+													    	<input type="radio" name="rid" id="option{{cnt}}" value="{{cnt}}" autocomplete="off" checked> {{cnt}}
+													  	</label>
+													  	{% else %}
+													  	<label class="btn btn-primary">
+													    	<input type="radio" name="rid" id="option{{cnt}}" value="{{cnt}}" autocomplete="off"> {{cnt}}
+													  	</label>
+													  	{% endif %}
+													{% endfor %}
+													</div>
+												</div>
+												<!-- Form actions -->
+												<div class="ml-auto">
+														<button id="sub" type="button" class="btn btn-primary float-right btn-sm" >Submit</button>
+														<button id="clear_but" type="button" class="btn btn-primary float-right btn-sm" >Clear</button>
+												</div>
+<!-- 												<div class="dropdown dropleft">
+												  <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+												    Select Map
+												  </button>
+												  <div class="dropdown-menu dropdown-menu-right">
+												    <button class="dropdown-item" type="button">Action</button>
+												    <button class="dropdown-item" type="button">Another action</button>
+												    <button class="dropdown-item" type="button">Something else here</button>
+												  </div>
+												</div> -->
+												<div class="col-sm-6">
+														<canvas id="canvas" style="width:1000px; height:425px; border:1px solid #000000;" ></canvas>
+														<!-- <canvas id="canvas" style="background:url('static/images/map.png'); border:1px solid #000000;" resize ></canvas> -->
+												</div>
+											</div>
+										</div>
+									</fieldset>
+								</form>	
+							</div>
+						</section>
+					</div>
+				</section>
+			</main>
+		</div>
+	</div>
+
+	<!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="static/js/jquery-3.2.1.min.js"></script>
+    <script src="static/dist/js/bootstrap.min.js"></script>
+    <script src="static/js/bootstrap-datepicker.js"></script>
+    <script src="static/js/custom.js"></script>
+    <script src="static/js/tether.min.js"></script>
+
+    <!-- Define inlined PaperScript associate it with myCanvas -->
+    <script type="text/paperscript" canvas="canvas">
+		tool.minDistance = 8;
+		tool.maxDistance = 12;
+		var dpath, tPath;
+		var dPathSendX = [];
+		var dPathSendY = [];
+		var allSendPointsX = [] allSendPointsY = [];
+		var allRecvPointsX = [] allRecvPointsY = [];
+		var start_tracking = 0;
+
+		function onMouseDown(event) {
+		    dpath = new Path();
+		    dpath.strokeColor = 'blue'
+		    dpath.strokeWidth =4;
+		    dpath.fullySelected = true;
+		}
+
+		function onMouseDrag(event) {
+		    dpath.add(event.point);
+		    dPathSendX.push(event.point.x);
+		    dPathSendY.push(event.point.y);
+		}
+
+		function onMouseUp(event) {
+		    start_tracking = 1;
+		    dpath.add(event.point);
+		    dPathSendX.push(event.point.x);
+		    dPathSendY.push(event.point.y);
+		    dpath.closed = false;
+		    dpath.selected = false;
+		    dpath.smooth();
+
+		}
+
+		$("#sub").click(function() {
+		    $.ajax({
+		        url: "/recv_robot_path",
+		        type: "POST",
+		        data: JSON.stringify({
+		            x: dPathSendX,
+		            y: dPathSendY
+		        }),
+		        contentType: "application/json; charset=utf-8",
+		        success: function() {
+
+			        tPath = new Path({ strokeColor: 'green', strokeWidth: 8	});
+		            var auto_refresh = setInterval(function() {
+		                $.ajax({
+		                    url: "/get_tracking_data",
+		                    dataType: 'json',
+		                    success: function(data) {
+		                        tPath.add(new Point(data['x'][0], data['y'][0]))
+		                        if (data['track_done']) {
+		                            clearInterval(auto_refresh);
+		                        }
+		                    }
+		                });
+		            }, 100);
+		        }
+		    });
+		});
+		$("#clear_but").click(function() {
+			var canvas = document.getElementById('canvas');
+			var context = canvas.getContext('2d');
+            context.clearRect(0, 0, 1000, 425);
+            dpath.remove();
+            tPath.remove();
+            dPathSendX.length = 0;
+            dPathSendY.length = 0;
+		});
+    </script>
+
+	</body>
+</html>
