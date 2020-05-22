@@ -71,6 +71,22 @@
 
 				
 				<section class="row">
+					<div class="row">
+					<div class="col-sm-12 float-right" id="statusIndicator">
+					    <p id="connecting">
+					      Connecting to rosbridge...
+					    </p>
+					    <p id="connected" style="color:#00D600; display:none">
+					      Connected
+					    </p>
+					    <p id="error" style="color:#FF0000; display:none">
+					      Error in the backend!
+					    </p>
+					    <p id="closed" style="display:none">
+					      Connection closed.
+					    </p>
+					</div>
+					</div>
 					<div class="col-sm-12">
 						<section class="row">
 							<div class="col-md-12 col-lg-9">
@@ -78,6 +94,9 @@
 									<fieldset>
 										<div class="form-group">
 											<div class="row">
+
+
+
 												<div class="col-sm-4">
 												<label for="rid" class="col"><strong>Select Robot</strong></label>
 													<div class="btn-group" data-toggle="buttons">
@@ -101,7 +120,7 @@
 												</div>
 												<div class="col-sm-6">
 														<!-- <canvas id="canvas" style="width:1000px; height:425px; border:1px solid #000000;" ></canvas> -->
-														<canvas id="canvas" width="1000" height="425" style="width:1000px; height:425px; background:url('static/images/map.png'); border:1px solid #000000;" ></canvas>
+														<canvas id="canvas" width="1000" height="425" style="width:1000px; height:425px; background:url('static/images/black.png'); border:1px solid #000000;" ></canvas>
 												</div>
 											</div>
 											<div class="dropup">
@@ -132,17 +151,91 @@
     <script src="static/js/bootstrap-datepicker.js"></script>
     <script src="static/js/custom.js"></script>
     <script src="static/js/tether.min.js"></script> 
-
+	// <script src="https://static.robotwebtools.org/EventEmitter2/current/eventemitter2.min.js"></script>
+	<script src="https://static.robotwebtools.org/roslibjs/current/roslib.min.js"></script>
     <!-- Define inlined PaperScript associate it with myCanvas -->
     <script type="text/paperscript" canvas="canvas">
+		// Connecting to ROS
+		// -----------------
+		var ros = new ROSLIB.Ros();
+
+		// If there is an error on the backend, an 'error' emit will be emitted.
+		ros.on('error', function(error) {
+		    document.getElementById('connecting').style.display = 'none';
+		    document.getElementById('connected').style.display = 'none';
+		    document.getElementById('closed').style.display = 'none';
+		    document.getElementById('error').style.display = 'inline';
+		    console.log(error);
+		});
+
+		 // Find out exactly when we made a connection.
+		 ros.on('connection', function() {
+		    console.log('Connection made!');
+		    document.getElementById('connecting').style.display = 'none';
+		    document.getElementById('error').style.display = 'none';
+		    document.getElementById('closed').style.display = 'none';
+		    document.getElementById('connected').style.display = 'inline';
+		});
+
+	  	ros.on('close', function() {
+		    console.log('Connection closed.');
+		    document.getElementById('connecting').style.display = 'none';
+		    document.getElementById('connected').style.display = 'none';
+	    	ocument.getElementById('closed').style.display = 'inline';
+ 	 	});
+
+	  	// Create a connection to the rosbridge WebSocket server.
+	  	ros.connect('ws://localhost:9090');
+
+		// var track_done_subs = new ROSLIB.Topic({
+		//     ros : ros,
+		//     name : '/track_done',
+		//     messageType : 'std_msgs/Int64'
+		// });
+
+		// var bot_odom = new ROSLIB.Topic({
+		//     ros : ros,
+		//     name : '/odom',
+		//     messageType : 'nav_msgs/Odometry'
+		// });
+
+		// bot_odom.subscribe(function(message) {
+		// 	tdata.length = 0;
+		// 	tdata.push(message.pose.pose.position.x);
+		// 	tdata.push(message.pose.pose.position.y);
+		//     // console.log('x: ' + message.pose.pose.position.x + '  y: ' + message.pose.pose.position.y);
+		// });
+
+		var trajectory_pub = new ROSLIB.Topic({
+	        ros : ros,
+	        name : '/trajectory',
+	        messageType : 'geometry_msgs/PoseArray'
+        });
+
+		var traj_data = new ROSLIB.Message({
+        	poses : []    
+        });
+
+   	    var v1 = new ROSLIB.Vector3({x : 0,y : 0, z : 0});
+		var q1 = new ROSLIB.Quaternion({x : 0, y : 0,	z : 0, w : 1});
+		var pose = new ROSLIB.Pose({
+		    position : v1,
+		    orientation : q1
+		  });
+
 		tool.minDistance = 8;
 		tool.maxDistance = 12;
 		var cwidth, cheight;
-		var dpath, tPath;
-		var dPathSendX = [];
-		var dPathSendY = [];
-		var start_tracking = 0;
+		var dpath;
+		
+        // var tPath = new Path({ strokeColor: 'green', strokeWidth: 8	});
 
+		function pointToPose(segment){
+		    pose.position.x = segment.point.x;
+		    pose.position.y = segment.point.y;
+		    return pose.clone();
+		}
+		
 		function onMouseDown(event) {
 		    dpath = new Path();
 		    dpath.strokeColor = 'blue'
@@ -152,47 +245,32 @@
 
 		function onMouseDrag(event) {
 		    dpath.add(event.point);
-		    dPathSendX.push(event.point.x);
-		    dPathSendY.push(event.point.y);
 		}
 
 		function onMouseUp(event) {
-		    start_tracking = 1;
 		    dpath.add(event.point);
-		    dPathSendX.push(event.point.x);
-		    dPathSendY.push(event.point.y);
+		    dpath.simplify(5);
 		    dpath.closed = false;
 		    dpath.selected = false;
-		    dpath.smooth();
-
+		    // dpath.smooth();
+		    traj_data.poses = dpath.segments.map(pointToPose);
+		    console.log(traj_data);
 		}
 
 		$("#sub").click(function() {
-			if ((dPathSendX.length > 0) && (dPathSendY.length > 0)){
-			    $.ajax({
-			        url: "/recv_robot_path",
-			        type: "POST",
-			        data: JSON.stringify({
-			            x: dPathSendX,
-			            y: dPathSendY
-			        }),
-			        contentType: "application/json; charset=utf-8",
-			        success: function() {
-				        tPath = new Path({ strokeColor: 'green', strokeWidth: 8	});
-			            var auto_refresh = setInterval(function() {
-			                $.ajax({
-			                    url: "/get_tracking_data",
-			                    dataType: 'json',
-			                    success: function(data) {
-			                        tPath.add(new Point(data['x'][0], data['y'][0]))
-			                        if (data['track_done']) {
-			                            clearInterval(auto_refresh);
-			                        }
-			                    }
-			                });
-			            }, 100);
-			        }
-			    });
+			var ctx = document.getElementById('canvas').getContext('2d');
+			if ((traj_data.poses.length > 0)){
+				trajectory_pub.publish(traj_data);
+				// console.log(Math.sqrt( Math.pow((endPt[0]-tdata[0]), 2) + Math.pow((endPt[1]-tdata[1]), 2) ));
+				// while(Math.sqrt( Math.pow((endPt[0]-tdata[0]), 2) + Math.pow((endPt[1]-tdata[1]), 2) ) > 10) {
+			 //    tPath.add(new Point(tdata[0], tdata[1]));
+			 //    console.log(tdata[0], tdata[1]);
+				// }
+				// track_done_subs.subscribe(function(message) {
+				// var track_done = message.data;
+				// console.log("track_done: " + track_done);
+				// track_done_subs.unsubscribe();
+				// });
 			}
 			else
 			{
@@ -200,15 +278,17 @@
 			}
 		});
 
-		$("#clear_but").click(function() {
-			var canvas = document.getElementById('canvas');
-			var context = canvas.getContext('2d');
-            context.clearRect(0, 0, canvas.width, canvas.height);
-            dpath.remove();
-            tPath.remove();
-            dPathSendX.length = 0;
-            dPathSendY.length = 0;
-		});
+		//  $("#clear_but").click(function() {
+		// 	var canvas = document.getElementById('canvas');
+		// 	var context = canvas.getContext('2d');
+  //           context.clearRect(0, 0, canvas.width, canvas.height);
+  //           dpath.remove();
+  //           dpath = new Path();
+  //           tPath.remove();
+  //           traj_data = new ROSLIB.Message({
+  //       	poses : []    
+	 //        });
+		// });
 
 		$("ul[id*=map_select] li").click(function () {
 	      var txt = ($(this).text());
@@ -240,5 +320,3 @@
 
 	</body>
 </html>
-<!-- $('#canvas').css("width", cwidth);
-			            $('#canvas').css("height", cheight); -->

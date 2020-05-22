@@ -99,20 +99,19 @@
 														<button id="sub" type="button" class="btn btn-primary float-right btn-sm" >Submit</button>
 														<button id="clear_but" type="button" class="btn btn-primary float-right btn-sm" >Clear</button>
 												</div>
-<!-- 												<div class="dropdown dropleft">
-												  <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-												    Select Map
-												  </button>
-												  <div class="dropdown-menu dropdown-menu-right">
-												    <button class="dropdown-item" type="button">Action</button>
-												    <button class="dropdown-item" type="button">Another action</button>
-												    <button class="dropdown-item" type="button">Something else here</button>
-												  </div>
-												</div> -->
 												<div class="col-sm-6">
-														<canvas id="canvas" style="width:1000px; height:425px; border:1px solid #000000;" ></canvas>
-														<!-- <canvas id="canvas" style="background:url('static/images/map.png'); border:1px solid #000000;" resize ></canvas> -->
+														<!-- <canvas id="canvas" style="width:1000px; height:425px; border:1px solid #000000;" ></canvas> -->
+														<canvas id="canvas" width="1000" height="425" style="width:1000px; height:425px; background:url('static/images/black.png'); border:1px solid #000000;" ></canvas>
 												</div>
+											</div>
+											<div class="dropup">
+											    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Select Map
+											    <span class="caret"></span></button>
+											    <ul id="map_select" class="dropdown-menu" style="background-color: #222222">
+											    	{% for n in maps_list %}
+											      		<li value="{{loop.index}}"><a class="dropdown-item" style="color:#7376df;">{{n}}</a></li>
+											    	{% endfor %}
+											    </ul>
 											</div>
 										</div>
 									</fieldset>
@@ -132,17 +131,16 @@
     <script src="static/dist/js/bootstrap.min.js"></script>
     <script src="static/js/bootstrap-datepicker.js"></script>
     <script src="static/js/custom.js"></script>
-    <script src="static/js/tether.min.js"></script>
+    <script src="static/js/tether.min.js"></script> 
 
     <!-- Define inlined PaperScript associate it with myCanvas -->
     <script type="text/paperscript" canvas="canvas">
 		tool.minDistance = 8;
 		tool.maxDistance = 12;
+		var cwidth, cheight;
 		var dpath, tPath;
 		var dPathSendX = [];
 		var dPathSendY = [];
-		var allSendPointsX = [] allSendPointsY = [];
-		var allRecvPointsX = [] allRecvPointsY = [];
 		var start_tracking = 0;
 
 		function onMouseDown(event) {
@@ -170,42 +168,91 @@
 		}
 
 		$("#sub").click(function() {
-		    $.ajax({
-		        url: "/recv_robot_path",
-		        type: "POST",
-		        data: JSON.stringify({
-		            x: dPathSendX,
-		            y: dPathSendY
-		        }),
-		        contentType: "application/json; charset=utf-8",
-		        success: function() {
-
-			        tPath = new Path({ strokeColor: 'green', strokeWidth: 8	});
-		            var auto_refresh = setInterval(function() {
-		                $.ajax({
-		                    url: "/get_tracking_data",
-		                    dataType: 'json',
-		                    success: function(data) {
-		                        tPath.add(new Point(data['x'][0], data['y'][0]))
-		                        if (data['track_done']) {
-		                            clearInterval(auto_refresh);
-		                        }
-		                    }
-		                });
-		            }, 100);
-		        }
-		    });
+			var ctx = document.getElementById('canvas').getContext('2d');
+			var curr_x, curr_y;
+			if ((dPathSendX.length > 0) && (dPathSendY.length > 0)){
+			    $.ajax({
+			        url: "/recv_robot_path",
+			        type: "POST",
+			        data: JSON.stringify({
+			            x: dPathSendX,
+			            y: dPathSendY
+			        }),
+			        contentType: "application/json; charset=utf-8",
+			        success: function() {
+				        tPath = new Path({ strokeColor: 'green', strokeWidth: 8	});
+			            var auto_refresh = setInterval(function() {
+			                $.ajax({
+			                    url: "/get_tracking_data",
+			                    dataType: 'json',
+			                    success: function(data) {
+			                    	curr_x = data['x'][0]
+			                    	curr_y = data['y'][0]
+			                        tPath.add(new Point(curr_x, curr_y))
+			                        if (data['track_done']) {
+			                            clearInterval(auto_refresh);
+			                        }
+			                    }
+			                });
+			            }, 100);
+			        }
+			    });
+			}
+			else
+			{
+				alert("Please draw a Path to make the robot move!!!");
+			}
 		});
+
 		$("#clear_but").click(function() {
 			var canvas = document.getElementById('canvas');
 			var context = canvas.getContext('2d');
-            context.clearRect(0, 0, 1000, 425);
+            context.clearRect(0, 0, canvas.width, canvas.height);
             dpath.remove();
             tPath.remove();
             dPathSendX.length = 0;
             dPathSendY.length = 0;
 		});
+
+		$("ul[id*=map_select] li").click(function () {
+	      var txt = ($(this).text());
+	      var count = $(this).attr('value');
+	      
+	      $.ajax({
+		        url: "/get_maps_count",
+		        type: "GET",	
+		        data: {count: count},
+		        contentType: "application/json; charset=utf-8",
+		        success: function() {
+			       $.ajax({
+			            url: "/post_maps",
+			            dataType: 'json',	
+			            success: function(data) {
+			            img = 'static/images/'+data['img']
+			            cwidth = data['x_dim'];
+			            cheight = data['y_dim'];
+			            $('#canvas').css("background-image", "url(" + img + ")");
+			            $('#canvas').attr({width:cwidth,height:cheight}).css({width:'cwidth',height:'cheight'})
+						$('#canvas').css("width", cwidth);
+						$('#canvas').css("height", cheight);
+			            }
+					});
+		        }
+		    });
+	    });
+
+	    function clearArc(context, x, y, radius) {
+		  context.save();
+		  context.globalCompositeOperation = 'destination-out';
+		  context.beginPath();
+		  context.arc(x, y, radius, 0, 2 * Math.PI, false);
+		  context.fill();
+		  context.restore();
+		}
     </script>
 
 	</body>
 </html>
+<!-- 			                ctx.beginPath();
+			                ctx.fillStyle = 'red';
+						    ctx.arc(curr_x, curr_y, 12, 0, 2 * Math.PI); -->

@@ -24,6 +24,7 @@ database_path = os.path.join(path, 'WebPage')
 allBots = range(3, 3)
 botIPS = ['192.168.1.10' + str(i) for i in allBots]
 maps_list = []
+bot_initial_pose = []
 select_map = None
 x_dim = 1000
 y_dim = 425
@@ -82,7 +83,7 @@ def createStartUPFiles(device_file_path=device_file_path):
 	if os.path.exists(device_file_path + '/maps.json'):
 		pass
 	else:
-		data = {"maps": [{"image": "", "x_dim" : 0, "y_dim" : 0}]}
+		data = {"maps": [{"image": "", "x_dim": 0, "y_dim": 0}], "pose": {"id": 0,"x": 0,"y": 0,"th": 0} }
 		with open(device_file_path + '/maps.json', 'w') as f:
 			json.dump(data, f)
 
@@ -93,10 +94,12 @@ def init_app():
 
 # read initial data for finding the number of maps
 def readMapsJson():
-	global maps_list
+	global maps_list, bot_initial_pose
 	with open(device_file_path + '/maps.json') as f:
 		fc = json.load(f)
 	no_of_maps = len(fc['maps'])
+	robot_data = fc['pose']
+	bot_initial_pose = [robot_data['id'], robot_data['x'], robot_data['y'], robot_data['th']]
 	for i in range(no_of_maps):
 		maps_list.append(fc['maps'][i]['image'].split('.')[0])
 
@@ -178,14 +181,15 @@ def go_to_goal():
 # Route for manually controlling the robot
 @app.route('/human_control', methods=['GET','POST'])
 def human_control():
-	global maps_list
+	global maps_list, bot_initial_pose
 	if not 'username' in session:
 		flash('You are Logged Out')
 		return render_template('home.html')
 	else:
 		if request.method == 'POST':
 			rid = request.form['rid']
-		return render_template('human_control.html', active_user=active_user, maps_list=maps_list) 
+		return render_template('human_control.html', active_user=active_user, \
+								maps_list=maps_list, robot_data=bot_initial_pose) 
 
 @app.route('/recv_robot_path',methods=["GET", "POST"])
 def recv_robot_path():
@@ -295,10 +299,9 @@ def tracking(path):
 	pose = Map.meter2pixel({'x':[state.x], 'y': [state.y]}, invert=True, GUI_MAX_COORD = (x_dim, y_dim))
 	return pose, tind
 
-
 def main():
 	app.secret_key = os.urandom(12)
-	app.run(host='192.168.1.3', port='5000', debug=True)
+	app.run(host='192.168.1.7', port='5000', debug=True)
 	# app.run(debug=True)
 	# app.run(debug=False)
 
