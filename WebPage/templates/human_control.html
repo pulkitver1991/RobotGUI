@@ -193,23 +193,37 @@
 		//     messageType : 'std_msgs/Int64'
 		// });
 
-		// var bot_odom = new ROSLIB.Topic({
-		//     ros : ros,
-		//     name : '/odom',
-		//     messageType : 'nav_msgs/Odometry'
-		// });
+		var bot_odom = new ROSLIB.Topic({
+		    ros : ros,
+		    name : '/odom',
+		    queue_size: 1,
+		    messageType : 'nav_msgs/Odometry'
+		});
 
-		// bot_odom.subscribe(function(message) {
-		// 	tdata.length = 0;
-		// 	tdata.push(message.pose.pose.position.x);
-		// 	tdata.push(message.pose.pose.position.y);
-		//     // console.log('x: ' + message.pose.pose.position.x + '  y: ' + message.pose.pose.position.y);
-		// });
+		var tdata = [0, 0];
+		bot_odom.subscribe(function(message) {
+			tdata[0] = message.pose.pose.position.x;
+			tdata[1] = message.pose.pose.position.y;
+			// console.log(tdata);
+	     	tPath.add(new Point(tdata[0], tdata[1]));
+		});
+
 
 		var trajectory_pub = new ROSLIB.Topic({
 	        ros : ros,
 	        name : '/trajectory',
 	        messageType : 'geometry_msgs/PoseArray'
+        });
+
+        var tracking_pub = new ROSLIB.Topic({
+	        ros : ros,
+	        name : '/start_tracking',
+	        messageType : 'std_msgs/Int8'
+        });
+
+
+        var tracking_status = new ROSLIB.Message({
+        	data : 0.0    
         });
 
 		var traj_data = new ROSLIB.Message({
@@ -223,18 +237,20 @@
 		    orientation : q1
 		  });
 
-		tool.minDistance = 8;
-		tool.maxDistance = 12;
+		tool.minDistance = 15;
+		tool.maxDistance = 20;
+		var dpath_packet_size = 300;
+		var dpath_sent = 0;	
 		var cwidth, cheight;
 		var dpath;
 		
-        // var tPath = new Path({ strokeColor: 'green', strokeWidth: 8	});
+        var tPath = new Path({ strokeColor: 'green', strokeWidth: 8	});
 
-		function pointToPose(segment){
-		    pose.position.x = segment.point.x;
-		    pose.position.y = segment.point.y;
-		    return pose.clone();
-		}
+		// function pointToPose(segment){
+		//     pose.position.x = segment.point.x;
+		//     pose.position.y = segment.point.y;
+		//     return pose.clone();
+		// }
 		
 		function onMouseDown(event) {
 		    dpath = new Path();
@@ -243,34 +259,41 @@
 		    dpath.fullySelected = true;
 		}
 
+		var poses = [];
 		function onMouseDrag(event) {
 		    dpath.add(event.point);
+		    pose.position.x = event.point.x;
+		    pose.position.y = event.point.y;
+		    poses.push(pose.clone());
+		    if (dpath.length  > dpath_packet_size + dpath_sent) {
+		    	dpath_sent = dpath.length;	
+		    	traj_data.poses = $.extend(true, [], poses);
+		    	trajectory_pub.publish(traj_data);
+		    	console.log(traj_data);
+		    	poses.length = 0	
+		    }
 		}
 
 		function onMouseUp(event) {
 		    dpath.add(event.point);
-		    dpath.simplify(5);
+		    pose.position.x = event.point.x;
+		    pose.position.y = event.point.y;
+		    poses.push(pose.clone());
+		    // dpath.simplify(5);
 		    dpath.closed = false;
 		    dpath.selected = false;
 		    // dpath.smooth();
-		    traj_data.poses = dpath.segments.map(pointToPose);
-		    console.log(traj_data);
+		    traj_data.poses = $.extend(true, [], poses);
+		    trajectory_pub.publish(traj_data);
 		}
 
 		$("#sub").click(function() {
 			var ctx = document.getElementById('canvas').getContext('2d');
 			if ((traj_data.poses.length > 0)){
-				trajectory_pub.publish(traj_data);
-				// console.log(Math.sqrt( Math.pow((endPt[0]-tdata[0]), 2) + Math.pow((endPt[1]-tdata[1]), 2) ));
-				// while(Math.sqrt( Math.pow((endPt[0]-tdata[0]), 2) + Math.pow((endPt[1]-tdata[1]), 2) ) > 10) {
-			 //    tPath.add(new Point(tdata[0], tdata[1]));
-			 //    console.log(tdata[0], tdata[1]);
-				// }
-				// track_done_subs.subscribe(function(message) {
-				// var track_done = message.data;
-				// console.log("track_done: " + track_done);
-				// track_done_subs.unsubscribe();
-				// });
+				tracking_status.data = 1
+				tracking_pub.publish(tracking_status);
+		        tPath = new Path({ strokeColor: 'green', strokeWidth: 8	});
+				// while(Math.sqrt( Math.pow((last_pt[0]-tdata[0]), 2) + Math.pow((last_pt[1]-tdata[1]), 2)) > 20) {
 			}
 			else
 			{
@@ -278,17 +301,17 @@
 			}
 		});
 
-		//  $("#clear_but").click(function() {
-		// 	var canvas = document.getElementById('canvas');
-		// 	var context = canvas.getContext('2d');
-  //           context.clearRect(0, 0, canvas.width, canvas.height);
-  //           dpath.remove();
-  //           dpath = new Path();
-  //           tPath.remove();
-  //           traj_data = new ROSLIB.Message({
-  //       	poses : []    
-	 //        });
-		// });
+		 $("#clear_but").click(function() {
+		 	tracking_status.data = 2
+			tracking_pub.publish(tracking_status);
+			var canvas = document.getElementById('canvas');
+			var context = canvas.getContext('2d');
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            dpath.remove();
+            tPath.remove();
+            poses.length = 0;
+            traj_data.poses.length = 0;
+		});
 
 		$("ul[id*=map_select] li").click(function () {
 	      var txt = ($(this).text());
