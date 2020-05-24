@@ -113,7 +113,9 @@
 													{% endfor %}
 													</div>
 												</div>
+
 												<div class="ml-auto">
+														<button id="download" type="button" class="btn btn-primary float-right btn-sm" >Download</button>
 														<button id="cancel" type="button" class="btn btn-primary float-right btn-sm" >Cancel</button>
 														<button id="clear_but" type="button" class="btn btn-primary float-right btn-sm" >Clear</button>
 														<button id="sub" type="button" class="btn btn-primary float-right btn-sm" >Submit</button>
@@ -314,6 +316,21 @@
             poses.length = 0;
             traj_data.poses.length = 0;
 		});
+
+
+		$("#download").click(function(){
+		  	canvas = document.getElementById('canvas')
+			var image = canvas.toDataURL("image/png")
+			downloadImage(image, 'path.png');
+		});
+
+		function downloadImage(data, filename) {
+		    var a = document.createElement('a');
+		    a.href = data;
+		    a.download = filename;
+		    document.body.appendChild(a);
+		    a.click();
+		}
 
 		$("ul[id*=map_select] li").click(function () {
 	      var txt = ($(this).text());
