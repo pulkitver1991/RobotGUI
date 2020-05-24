@@ -113,10 +113,10 @@
 													{% endfor %}
 													</div>
 												</div>
-												<!-- Form actions -->
 												<div class="ml-auto">
-														<button id="sub" type="button" class="btn btn-primary float-right btn-sm" >Submit</button>
+														<button id="cancel" type="button" class="btn btn-primary float-right btn-sm" >Cancel</button>
 														<button id="clear_but" type="button" class="btn btn-primary float-right btn-sm" >Clear</button>
+														<button id="sub" type="button" class="btn btn-primary float-right btn-sm" >Submit</button>
 												</div>
 												<div class="col-sm-6">
 														<!-- <canvas id="canvas" style="width:1000px; height:425px; border:1px solid #000000;" ></canvas> -->
@@ -239,19 +239,13 @@
 
 		tool.minDistance = 15;
 		tool.maxDistance = 20;
-		var dpath_packet_size = 300;
+		var dpath_packet_size = 20;
 		var dpath_sent = 0;	
 		var cwidth, cheight;
 		var dpath;
 		
         var tPath = new Path({ strokeColor: 'green', strokeWidth: 8	});
 
-		// function pointToPose(segment){
-		//     pose.position.x = segment.point.x;
-		//     pose.position.y = segment.point.y;
-		//     return pose.clone();
-		// }
-		
 		function onMouseDown(event) {
 		    dpath = new Path();
 		    dpath.strokeColor = 'blue'
@@ -265,8 +259,9 @@
 		    pose.position.x = event.point.x;
 		    pose.position.y = event.point.y;
 		    poses.push(pose.clone());
-		    if (dpath.length  > dpath_packet_size + dpath_sent) {
-		    	dpath_sent = dpath.length;	
+		    // if (dpath.length  > dpath_packet_size + dpath_sent) {
+		    if (dpath.segments.length > dpath_packet_size + dpath_sent){
+		    	dpath_sent = dpath.segments.length;	
 		    	traj_data.poses = $.extend(true, [], poses);
 		    	trajectory_pub.publish(traj_data);
 		    	console.log(traj_data);
@@ -290,7 +285,7 @@
 		$("#sub").click(function() {
 			var ctx = document.getElementById('canvas').getContext('2d');
 			if ((traj_data.poses.length > 0)){
-				tracking_status.data = 1
+				tracking_status.data = 1;
 				tracking_pub.publish(tracking_status);
 		        tPath = new Path({ strokeColor: 'green', strokeWidth: 8	});
 				// while(Math.sqrt( Math.pow((last_pt[0]-tdata[0]), 2) + Math.pow((last_pt[1]-tdata[1]), 2)) > 20) {
@@ -301,14 +296,21 @@
 			}
 		});
 
-		 $("#clear_but").click(function() {
-		 	tracking_status.data = 2
+		$("#clear_but").click(function() {
+		 	tracking_status.data = 2;
 			tracking_pub.publish(tracking_status);
 			var canvas = document.getElementById('canvas');
 			var context = canvas.getContext('2d');
             context.clearRect(0, 0, canvas.width, canvas.height);
             dpath.remove();
             tPath.remove();
+            poses.length = 0;
+            traj_data.poses.length = 0;
+		});
+
+		$("#cancel").click(function() {
+		 	tracking_status.data = 3;
+			tracking_pub.publish(tracking_status);
             poses.length = 0;
             traj_data.poses.length = 0;
 		});
