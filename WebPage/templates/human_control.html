@@ -44,6 +44,7 @@
 					<li class="nav-item"><a class="nav-link" href="/piston_control"><em class="fa fa-cogs"></em> Piston Control</a></li>
 					<li class="nav-item"><a class="nav-link" href="/go_to_goal"><em class="fa fa-cogs"></em> Go To Goal</a></li>
 					<li class="nav-item"><a class="nav-link active" href="/human_control"><em class="fa fa-cogs"></em> Human Control<span class="sr-only">(current)</span></a></li>
+					<li class="nav-item" ><a class="nav-link" href="/joystick_teleop"><em class="fa fa-cogs"></em> Joystick Teleop</a></li>
 				</ul>
 					
 				<a href="/signout" class="logout-button"><em class="fa fa-power-off"></em> Signout</a></nav>
@@ -93,12 +94,9 @@
 								<form id="myForm" class="form-horizontal" action="/human_control" method="post"> 
 									<fieldset>
 										<div class="form-group">
+											<label for="rid" class="col"><strong>Select Robot</strong></label>
 											<div class="row">
-
-
-
 												<div class="col-sm-4">
-												<label for="rid" class="col"><strong>Select Robot</strong></label>
 													<div class="btn-group" data-toggle="buttons">
 													{% for cnt in range(9) %}
 														{% if cnt == 0 %}
@@ -115,24 +113,34 @@
 												</div>
 
 												<div class="ml-auto">
-														<button id="download" type="button" class="btn btn-primary float-right btn-sm" >Download</button>
 														<button id="cancel" type="button" class="btn btn-primary float-right btn-sm" >Cancel</button>
-														<button id="clear_but" type="button" class="btn btn-primary float-right btn-sm" >Clear</button>
 														<button id="sub" type="button" class="btn btn-primary float-right btn-sm" >Submit</button>
+														<button id="clear_but" type="button" class="btn btn-primary float-right btn-sm" >Clear</button>
 												</div>
+											</div>
+											<div class="row">
+												<div class="ml-auto">
+														<button id="teleop" type="button" class="btn btn-primary float-right btn-sm" >Teleop</button>
+														<button id="download" type="button" class="btn btn-primary float-right btn-sm" >Download</button>
+												</div>
+											</div>
+											<br>
+											<div class="row">
 												<div class="col-sm-6">
 														<!-- <canvas id="canvas" style="width:1000px; height:425px; border:1px solid #000000;" ></canvas> -->
 														<canvas id="canvas" width="1000" height="425" style="width:1000px; height:425px; background:url('static/images/black.png'); border:1px solid #000000;" ></canvas>
 												</div>
 											</div>
-											<div class="dropup">
-											    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Select Map
-											    <span class="caret"></span></button>
-											    <ul id="map_select" class="dropdown-menu" style="background-color: #222222">
-											    	{% for n in maps_list %}
-											      		<li value="{{loop.index}}"><a class="dropdown-item" style="color:#7376df;">{{n}}</a></li>
-											    	{% endfor %}
-											    </ul>
+											<div class="row">
+												<div class="dropup">
+												    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-toggle="dropdown">Select Map
+												    <span class="caret"></span></button>
+												    <ul id="map_select" class="dropdown-menu" style="background-color: #222222">
+												    	{% for n in maps_list %}
+												      		<li value="{{loop.index}}"><a class="dropdown-item" style="color:#7376df;">{{n}}</a></li>
+												    	{% endfor %}
+												    </ul>
+												</div>
 											</div>
 										</div>
 									</fieldset>
@@ -160,7 +168,6 @@
 		// Connecting to ROS
 		// -----------------
 		var ros = new ROSLIB.Ros();
-
 		// If there is an error on the backend, an 'error' emit will be emitted.
 		ros.on('error', function(error) {
 		    document.getElementById('connecting').style.display = 'none';
@@ -183,17 +190,11 @@
 		    console.log('Connection closed.');
 		    document.getElementById('connecting').style.display = 'none';
 		    document.getElementById('connected').style.display = 'none';
-	    	ocument.getElementById('closed').style.display = 'inline';
+	    	document.getElementById('closed').style.display = 'inline';
  	 	});
 
 	  	// Create a connection to the rosbridge WebSocket server.
 	  	ros.connect('ws://localhost:9090');
-
-		// var track_done_subs = new ROSLIB.Topic({
-		//     ros : ros,
-		//     name : '/track_done',
-		//     messageType : 'std_msgs/Int64'
-		// });
 
 		var bot_odom = new ROSLIB.Topic({
 		    ros : ros,
@@ -210,7 +211,6 @@
 	     	tPath.add(new Point(tdata[0], tdata[1]));
 		});
 
-
 		var trajectory_pub = new ROSLIB.Topic({
 	        ros : ros,
 	        name : '/trajectory',
@@ -222,7 +222,6 @@
 	        name : '/start_tracking',
 	        messageType : 'std_msgs/Int8'
         });
-
 
         var tracking_status = new ROSLIB.Message({
         	data : 0.0    
@@ -276,10 +275,17 @@
 		    pose.position.x = event.point.x;
 		    pose.position.y = event.point.y;
 		    poses.push(pose.clone());
+
+		    //Appending robot id at the end of the list
+		    pose.position.x = getRobotID();
+		    pose.position.y = getRobotID();
+		    poses.push(pose.clone());
+
 		    // dpath.simplify(5);
 		    dpath.closed = false;
 		    dpath.selected = false;
 		    // dpath.smooth();
+		    console.log(poses);
 		    traj_data.poses = $.extend(true, [], poses);
 		    trajectory_pub.publish(traj_data);
 		}
@@ -317,7 +323,6 @@
             traj_data.poses.length = 0;
 		});
 
-
 		$("#download").click(function(){
 		  	canvas = document.getElementById('canvas')
 			var image = canvas.toDataURL("image/png")
@@ -331,6 +336,20 @@
 		    document.body.appendChild(a);
 		    a.click();
 		}
+
+		function getRobotID() {
+			var sel_robo = document.getElementsByName('rid'); 
+	        for(i = 0; i < sel_robo.length; i++) { 
+	            if(sel_robo[i].checked){ 
+	            	return i; 
+	        	}
+	        }
+	    } 
+
+		$("#teleop").click(function(){
+			document.getElementById('cancel').click();
+			window.location.replace('/joystick_teleop');
+		});
 
 		$("ul[id*=map_select] li").click(function () {
 	      var txt = ($(this).text());

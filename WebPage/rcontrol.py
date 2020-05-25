@@ -191,6 +191,18 @@ def human_control():
 		return render_template('human_control.html', active_user=active_user, \
 								maps_list=maps_list, robot_data=bot_initial_pose) 
 
+
+# Route for joystick_teleop on the robot
+@app.route('/joystick_teleop', methods=['GET','POST'])
+def joystick_teleop():
+	if not 'username' in session:
+		flash('You are Logged Out')
+		return render_template('home.html')
+	else:
+		if request.method == 'POST':
+			pass
+		return render_template('joystick_teleop.html', active_user=active_user) 
+
 @app.route('/recv_robot_path',methods=["GET", "POST"])
 def recv_robot_path():
 	global arena_path, state
@@ -302,7 +314,8 @@ def tracking(path):
 def main():
 	app.secret_key = os.urandom(12)
 	#app.run(host='192.168.1.7', port='5000', debug=True)
-	app.run(debug=True)
+	app.run(host='0.0.0.0', port='5000', debug=True)
+	# app.run(debug=True)
 	# app.run(debug=False)
 
 if __name__ == '__main__':
