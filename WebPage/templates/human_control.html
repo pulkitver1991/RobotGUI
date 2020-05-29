@@ -314,6 +314,7 @@
             tPath.remove();
             poses.length = 0;
             traj_data.poses.length = 0;
+            dpath_sent = 0;
 		});
 
 		$("#cancel").click(function() {
@@ -321,6 +322,7 @@
 			tracking_pub.publish(tracking_status);
             poses.length = 0;
             traj_data.poses.length = 0;
+            dpath_sent = 0;
 		});
 
 		$("#download").click(function(){

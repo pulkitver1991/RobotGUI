@@ -574,15 +574,6 @@ input[type=checkbox]:checked + label {
   .todo-list-footer .btn {
     border-radius: .4rem; }
 
-img {
-  /*width: 600px;*/
-  display: none;
-}
-button {
-  align: top, left;
-  
-}
-
 html,
 body {
     height: 100%;

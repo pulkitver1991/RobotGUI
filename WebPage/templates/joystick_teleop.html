@@ -30,6 +30,10 @@
     <!-- Custom styles for this template -->
     <link href="static/css/style.css" rel="stylesheet">
 
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+	<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+
 </head>
 
 <body>
@@ -75,20 +79,20 @@
 				
 				<section class="row">
 					<div class="row">
-					<div class="col-sm-12 float-right" id="statusIndicator">
-					    <p id="connecting">
-					      Connecting to rosbridge...
-					    </p>
-					    <p id="connected" style="color:#00D600; display:none">
-					      Connected
-					    </p>
-					    <p id="error" style="color:#FF0000; display:none">
-					      Error in the backend!
-					    </p>
-					    <p id="closed" style="display:none">
-					      Connection closed.
-					    </p>
-					</div>
+						<div class="col-sm-12 float-right" id="statusIndicator">
+						    <p id="connecting">
+						      Connecting to rosbridge...
+						    </p>
+						    <p id="connected" style="color:#00D600; display:none">
+						      Connected
+						    </p>
+						    <p id="error" style="color:#FF0000; display:none">
+						      Error in the backend!
+						    </p>
+						    <p id="closed" style="display:none">
+						      Connection closed.
+						    </p>
+						</div>
 					</div>
 					<div class="col-sm-12">
 						<section class="row">
@@ -96,61 +100,65 @@
 								<form id="myForm" class="form-horizontal" action="/human_control" method="post"> 
 									<fieldset>
 										<div class="form-group">
+											<div>
+												<img id="arena_map" class="fixed-bottom" src="static/images/maze.png" alt="check_image" width="400" height="300" />
+												<!-- style=”display:none” -->
+											</div>
 											<label for="rid" class="col"><strong>Select Robot</strong></label>
 											<div class="row">
-												<div class="col-sm-7">
+												<div class="col-sm-6">
 													<div class="btn-group" data-toggle="buttons">
 													{% for cnt in range(9) %}
 														{% if cnt == 0 %}
-													  	<label class="btn btn-primary active">
+													  	<label class="btn btn-primary btn-sm active">
 													    	<input type="radio" name="rid" id="option{{cnt}}" value="{{cnt}}" autocomplete="off" checked> {{cnt}}
 													  	</label>
 													  	{% else %}
-													  	<label class="btn btn-primary">
+													  	<label class="btn btn-primary btn-sm">
 													    	<input type="radio" name="rid" id="option{{cnt}}" value="{{cnt}}" autocomplete="off"> {{cnt}}
 													  	</label>
 													  	{% endif %}
 													{% endfor %}
 													</div>
 												</div>
-												<div class="col-sm-3 float-right">
-  													<input type="text" id="move_command" class="form-control" placeholder="Input Command" onkeydown="myFunction(event)">
+												<div class="col-sm-2 float-right">
+  													<input type="text" id="move_command" class="form-control" placeholder="Input" onkeydown="giveCommands(event)">
 												</div>
-												<div class="checkbox ml-auto">
+												<div class="col-sm-2">
 												    <input id="track" type="checkbox" data-toggle="toggle" class="btn btn-primary float-right btn-sm" data-on="Track" data-off="Stop" data-offstyle="danger">
 												</div>
 											</div>
-											<br>
 											<div class="row">
-												<div class="col-sm-7">
-													<div class="jumbotron jumbotron-fluid">
-													  <div class="container">
-													    <h4 class="display-6">Joystick Controls</h4>
-														    <p class="lead">To run the robot.<br>
-										    				&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<font size="4"
-		          											color="red">w</font><br>
-										    				&nbsp; &nbsp; <font size="4"color="red">a</font> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<font size="4"color="red">d</font><br>
-										    				&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  &nbsp; <font size="4"color="red">s</font> <br>
-										    				Press "<font size="4"color="red">w</font>" to move Forward <br>
-										    				Press "<font size="4"color="red">a</font>" to move Left <br>
-										    				Press "<font size="4"color="red">d</font>" to move Right<br>
-										    				Press "<font size="4"color="red">s</font>" to move Backward <br>
-										    				Press "<font size="4"color="red">x/space</font>" to Stop the robot <br>
-										    				</p>
-													  </div>
+													<div class="col-sm-12 fixed">
+													    <button class="btn btn-primary btn-sm" type="button" data-toggle="collapse" data-target="#collapseExample" aria-expanded="false" aria-controls="collapseExample">
+													    Instructions
+													  	</button>
+													  	<div class="collapse" id="collapseExample">
+														  <div class="card card-body">
+														  	<div class="jumbotron jumbotron-fluid">
+															  <div class="container">
+															    <h4 class="display-6">Joystick Controls</h4>
+																    <p class="lead">To run the robot.<br>
+												    				&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<font size="4"
+				          											color="red">w</font><br>
+												    				&nbsp; &nbsp; <font size="4"color="red">a</font> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<font size="4"color="red">d</font><br>
+												    				&nbsp; &nbsp; &nbsp; &nbsp; &nbsp;  &nbsp; <font size="4"color="red">s</font> <br>
+												    				Press "<font size="4"color="red">w</font>" to move Forward <br>
+												    				Press "<font size="4"color="red">a</font>" to move Left <br>
+												    				Press "<font size="4"color="red">d</font>" to move Right<br>
+												    				Press "<font size="4"color="red">s</font>" to move Backward <br>
+												    				Press "<font size="4"color="red">x/space</font>" to Stop the robot <br>
+												    				</p>
+															  </div>
+															</div>
+														  </div>
+														</div>
 													</div>
 												</div>
-
-												<div class="col-sm-5">
-													<br>
-													<br>
-													<div class="card">
-														<video class="float-left" width="550" controls>
-												  		<source src="mov_bbb.mp4" type="video/mp4">
-														</video>
-													</div>
+												<br>
+												<div class="row">
+													<div class="col-sm-5" id="video_table"></div>
 												</div>
-											</div>
 										</div>
 									</fieldset>
 								</form>	
@@ -176,6 +184,7 @@
 	<script src="https://static.robotwebtools.org/roslibjs/current/roslib.min.js"></script>
     <!-- Define inlined PaperScript associate it with myCanvas -->
     <script>
+
 		// Connecting to ROS
 		// -----------------
 		var ros = new ROSLIB.Ros();
@@ -231,26 +240,53 @@
 		    }
 		  });
 
-	  	var joystick_pub = new ROSLIB.Topic({
-	        ros : ros,
-	        name : '/joystick_tracking',
-	        messageType : 'std_msgs/Int8'
-        });
+        var imageTopic = new ROSLIB.Topic({
+		    ros : ros,
+		    name : '/cam_front/left/compressed',
+		    messageType : 'sensor_msgs/CompressedImage'
+		});
 
-        var joystick_status = new ROSLIB.Message({
-        	data : 0.0    
-        });
+//*********************************************************************************
+    	document.getElementById('arena_map').style.visibility='hidden';
+		var content = "<table>", ros_vid = "";
+		var video_topics = [];
+		var max_videos = 17; // no of max videos you want to display
+		var vw = 1000, vh = (max_videos==1)? 450 : 300; 
+		var col = (max_videos==1)? 1 : 4; //change the col value, if you want to change the size of table
+		var row = Math.floor(max_videos/col), extra=(max_videos%col);
+		var counter = 1;
+		for(r = 0; r < row; r++){
+			content += '<tr>';
+			for(c = 0; c < col; c++){
+				ros_vid = "<video id= myros_vid" + counter + " class=float-left width=" + vw/col + " height=" + vh + " controls></video>";
+		    	content += '<td>' + ros_vid + '</td>';
+		    	counter = counter + 1;
+			}
+			content += '</tr>';
+		}
+		if (extra){
+			content += '<tr>';
+			for(c = 0; c < extra; c++){
+				ros_vid = "<video id= myros_vid" + counter + " class=float-left width=" + vw/col + " height=" + vh + " controls></video>";
+		    	content += '<td>' + ros_vid + '</td>';
+		    	counter = counter + 1;
+			}
+			content += '</tr>';
+		}
+		content += "</table>"
+		console.log(content);
+		$('#video_table').append(content);
 
-        // $("#move_command").keypress(function(event) {
-        // 	var x =  event.which || event.keyCode;
-        // 	if (x == 65){
-        // 		console.log("hello");
-        // 	}
-        // });
+		imageTopic.subscribe(function(message) {
+			for (i = 1; i <= max_videos; i++){
+        	document.getElementById('myros_vid'+i).poster = "data:image/jpg;base64," + message.data;
+        	}
+      	});
+
+//*********************************************************************************
 		var send_cmd_vel = 0;
 		var speed = 0, turn  = 0;
-
-		function myFunction(event) {
+		function giveCommands(event) {
 		  var speed_dx = 0.05, turn_dx = 0.1;
 		  var x = event.which || event.keyCode; // event.keyCode is used for IE8 and earlier
 		  if (send_cmd_vel) {
@@ -286,7 +322,6 @@
 		  }
 		}
 
-
 		function limitVelocities(speed, turn){
 		  var speed_max = 0.3, turn_max = 3.14;	
 		  if (speed > speed_max){speed = speed_max;}
@@ -295,20 +330,25 @@
 		  if (turn < -turn_max){turn = -turn_max;}
 		  return [speed, turn];
 		}
-
-
+//*********************************************************************************
   		$(function(){ 
   			$('#track').change(function() {
   				if($(this).prop('checked')) {
+			    	document.getElementById('arena_map').style.visibility='visible';
   					send_cmd_vel = 1;
   				} else {
+			    	document.getElementById('arena_map').style.visibility='hidden';
   					send_cmd_vel = 0;
+  					twist.linear.x = 0;
+				    twist.angular.z = 0;
+				  	cmdVel.publish(twist);
   					$('#move_command').val('');
   				}
 
   			});
   		});
-    </script>
 
+    </script>
 	</body>
 </html>
+

@@ -313,9 +313,9 @@ def tracking(path):
 
 def main():
 	app.secret_key = os.urandom(12)
-	#app.run(host='192.168.1.7', port='5000', debug=True)
-	app.run(host='0.0.0.0', port='5000', debug=True)
-	# app.run(debug=True)
+	# app.run(host='192.168.1.3', port='5000', debug=True)
+	# app.run(host='0.0.0.0', port='5000', debug=True)
+	app.run(debug=True)
 	# app.run(debug=False)
 
 if __name__ == '__main__':
