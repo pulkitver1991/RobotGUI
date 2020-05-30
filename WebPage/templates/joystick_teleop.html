@@ -101,7 +101,11 @@
 									<fieldset>
 										<div class="form-group">
 											<div>
-												<img id="arena_map" class="fixed-bottom" src="static/images/maze.png" alt="check_image" width="400" height="300" />
+												<!-- <canvas id="arena_map" class="fixed-bottom" width="1000" height="425" style="width:1000px; height:425px; background:url('static/images/maze.png'); border:1px solid #000000;" > -->
+												<canvas id="arena_map" class="fixed-bottom" width="1000" height="425">
+													
+												</canvas>
+												<!-- <img id="arena_map" class="fixed-bottom" src="static/images/maze.png" alt="check_image" width="400" height="300" /> -->
 												<!-- style=”display:none” -->
 											</div>
 											<label for="rid" class="col"><strong>Select Robot</strong></label>
@@ -218,16 +222,68 @@
 	  	ros.connect('ws://localhost:9090');
 
 
-	  	  // First, we create a Topic object with details of the topic's name and message type.
-		  var cmdVel = new ROSLIB.Topic({
+//*********************************************************************************
+		var bot_odom = new ROSLIB.Topic({
+		    ros : ros,
+		    name : '/odom',
+		    queue_size: 1,
+		    messageType : 'nav_msgs/Odometry'
+		});
+
+		var tdata = [0, 0];
+		bot_odom.subscribe(function(message) {
+			tdata[0] = message.pose.pose.position.x;
+			tdata[1] = message.pose.pose.position.y;
+			tdata = meter2pixel(tdata);
+			// console.log(tdata);
+		});
+
+
+//*********************************************************************************
+
+var c = document.getElementById("arena_map");
+var ctx = c.getContext("2d");
+var arena = new Image();
+arena.src = 'static/images/black.png';
+ctx.scale(.5, .706);
+ctx.drawImage(arena, 0, 0);
+
+function meter2pixel(data){
+	var x = data[0], y = data[1];
+	var x_pix, y_pix;
+	console.log(x, y, "meters");
+	var GUI_MAX_COORD = [1000, 425], ARENA_MAX_COORD = [10, 8];
+	var GUI_MIN_COORD = [0, 0], ARENA_MIN_COORD = [0, 0];
+	var M2m = 1000;
+	XPixPerMm = GUI_MAX_COORD[0] / (ARENA_MAX_COORD[0] * M2m);
+    YPixPerMm = GUI_MAX_COORD[1] / (ARENA_MAX_COORD[1] * M2m);
+    if ((x > ARENA_MAX_COORD[0]) || (x < ARENA_MIN_COORD[0]) || (y > ARENA_MAX_COORD[1]) || (y < ARENA_MIN_COORD[1])){
+		;
+	} 
+	else{
+		x_pix = x * M2m * XPixPerMm;
+        y = ARENA_MAX_COORD[1] - y;
+        y_pix = y * M2m * YPixPerMm;
+	}
+	console.log(x_pix, y_pix, "pixels");
+	var c = document.getElementById("arena_map");
+	console.log(c.width, c.height, "height");
+	var ctx = c.getContext("2d");
+
+	ctx.rect(x_pix, y_pix, 1, 1);
+	ctx.fillStyle = "white";
+	ctx.fill();
+	return [x_pix, y_pix]
+}
+
+//*********************************************************************************
+		var cmdVel = new ROSLIB.Topic({
 		    ros : ros,
 		    name : '/cmd_vel',
 		    messageType : 'geometry_msgs/Twist'
-		  });
+		});
 
-		  // Then we create the payload to be published. The object we pass in to ros.Message matches the
-		  // fields defined in the geometry_msgs/Twist.msg definition.
-		  var twist = new ROSLIB.Message({
+		var twist = new ROSLIB.Message({
 		    linear : {
 		      x : 0.0,
 		      y : 0.0,
@@ -238,8 +294,9 @@
 		      y : 0.0,
 		      z : 0.0
 		    }
-		  });
+		});
 
+//*********************************************************************************
         var imageTopic = new ROSLIB.Topic({
 		    ros : ros,
 		    name : '/cam_front/left/compressed',
@@ -250,7 +307,7 @@
     	document.getElementById('arena_map').style.visibility='hidden';
 		var content = "<table>", ros_vid = "";
 		var video_topics = [];
-		var max_videos = 17; // no of max videos you want to display
+		var max_videos = 1; // no of max videos you want to display
 		var vw = 1000, vh = (max_videos==1)? 450 : 300; 
 		var col = (max_videos==1)? 1 : 4; //change the col value, if you want to change the size of table
 		var row = Math.floor(max_videos/col), extra=(max_videos%col);
@@ -274,7 +331,7 @@
 			content += '</tr>';
 		}
 		content += "</table>"
-		console.log(content);
+		// console.log(content);
 		$('#video_table').append(content);
 
 		imageTopic.subscribe(function(message) {
@@ -347,6 +404,7 @@
 
   			});
   		});
+//*********************************************************************************
 
     </script>
 	</body>
