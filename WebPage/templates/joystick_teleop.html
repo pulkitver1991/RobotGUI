@@ -101,12 +101,8 @@
 									<fieldset>
 										<div class="form-group">
 											<div>
-												<!-- <canvas id="arena_map" class="fixed-bottom" width="1000" height="425" style="width:1000px; height:425px; background:url('static/images/maze.png'); border:1px solid #000000;" > -->
 												<canvas id="arena_map" class="fixed-bottom" width="1000" height="425">
-													
 												</canvas>
-												<!-- <img id="arena_map" class="fixed-bottom" src="static/images/maze.png" alt="check_image" width="400" height="300" /> -->
-												<!-- style=”display:none” -->
 											</div>
 											<label for="rid" class="col"><strong>Select Robot</strong></label>
 											<div class="row">
@@ -130,6 +126,9 @@
 												</div>
 												<div class="col-sm-2">
 												    <input id="track" type="checkbox" data-toggle="toggle" class="btn btn-primary float-right btn-sm" data-on="Track" data-off="Stop" data-offstyle="danger">
+												</div>
+												<div class="col-sm-2">
+												    <button id="clear_but" type="button" class="btn btn-primary float-right" >Clear</button>
 												</div>
 											</div>
 											<div class="row">
@@ -305,6 +304,7 @@ function meter2pixel(data){
 
 //*********************************************************************************
     	document.getElementById('arena_map').style.visibility='hidden';
+    	document.getElementById('clear_but').style.visibility='hidden';    	
 		var content = "<table>", ros_vid = "";
 		var video_topics = [];
 		var max_videos = 1; // no of max videos you want to display
@@ -391,9 +391,11 @@ function meter2pixel(data){
   		$(function(){ 
   			$('#track').change(function() {
   				if($(this).prop('checked')) {
+			    	document.getElementById('clear_but').style.visibility='visible';
 			    	document.getElementById('arena_map').style.visibility='visible';
   					send_cmd_vel = 1;
   				} else {
+			    	document.getElementById('clear_but').style.visibility='hidden';
 			    	document.getElementById('arena_map').style.visibility='hidden';
   					send_cmd_vel = 0;
   					twist.linear.x = 0;
@@ -404,6 +406,12 @@ function meter2pixel(data){
 
   			});
   		});
+//*********************************************************************************
+		$("#clear_but").click(function() {
+			// var canvas = document.getElementById('arena_map');
+			// var context = canvas.getContext('2d');
+   //          context.clearRect(0, 0, canvas.width, canvas.height);
+		});
 //*********************************************************************************
 
     </script>
